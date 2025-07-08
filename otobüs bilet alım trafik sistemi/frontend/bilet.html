@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otobüs Bilet Satış</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+      
+        .bilet-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        button.primary-btn {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            transition: 0.3s ease;
+        }
+        button.primary-btn:hover {
+            background-color: #45a049;
+        }
+        #biletBilgisi {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        #map {
+            height: 500px;
+            margin: 2rem 0;
+            border-radius: 8px;
+            z-index: 1;
+        }
+        /* Harita için ek stiller */
+        .traffic-legend {
+            position: absolute;
+            bottom: 30px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            border: 1px solid #333;
+        }
+        .route-info {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            max-width: 250px;
+        }
+        #biletContent p {
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-links">
+                <a href="index.html">Ana Sayfa</a>
+                <a href="bilet.html" class="active">Bilet Satış</a>
+                <a href="login.html" id="loginLink">Giriş</a>
+                <a href="register.html" id="registerLink">Kayıt Ol</a>
+                <a href="bilet-gecmisi.html">Bilet Geçmişi</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span class="username" id="usernameDisplay"></span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Otobüs Bilet Satış</h1>
+            <p>Kolay ve hızlı bilet alımı ile yolculuğunuzu planlayın</p>
+        </div>
+
+        <div class="bilet-container">
+            <div class="form-group">
+                <label for="otobusSelect" style="color: black;">Otobüs Seç</label>
+                <select id="otobusSelect">
+                    <option value="">Otobüs Seçiniz</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="adSoyad" style="color: black;" >Ad Soyad</label>
+                <input id="adSoyad" type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="kisiSayisi" style="color: black;">Yolcu Sayısı</label>
+                <input id="kisiSayisi" type="number" min="1" value="1">
+            </div>
+
+            <button id="odemeButton" class="primary-btn">Ödeme Yap</button>
+
+            <div id="paymentForm" style="display:none; margin-top: 2rem;">
+                <div class="form-group">
+                    <label for="cardName" style="color: black;">Kart Üzerindeki İsim</label>
+                    <input id="cardName" type="text">
+                </div>
+                <div class="form-group">
+                    <label for="cardNumber" style="color: black;">Kart Numarası</label>
+                    <input id="cardNumber" type="text" maxlength="19">
+                </div>
+                <div class="form-group">
+                    <label for="cardExpiry" style="color: black;" >Son Kullanma Tarihi</label>
+                    <input id="cardExpiry" type="text" placeholder="AA/YY" maxlength="5">
+                </div>
+                <div class="form-group">
+                    <label for="cardCvv" style="color: black;">CVV</label>
+                    <input id="cardCvv" type="password" maxlength="3">
+                </div>
+                <div class="form-group">
+                    <button id="confirmPayment" class="primary-btn">Ödemeyi Tamamla</button>
+                </div>
+            </div>
+
+            <div id="biletBilgisi" style="display:none;">
+                <h3>Bilet Bilgileri</h3>
+                <div id="biletContent"></div>
+            </div>
+        </div>
+
+        <div id="map"></div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <h2>Otobüs Takip</h2>
+                <p>Güvenli ve konforlu yolculuklar için</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Gizlilik Politikası</a>
+                <a href="#">Kullanım Koşulları</a>
+                <a href="#">Hakkımızda</a>
+                <a href="#">SSS</a>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2023 Otobüs Takip Sistemi. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        
+        const map = L.map('map').setView([41.015, 28.979], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        
+        const legend = L.control({position: 'bottomright'});
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'traffic-legend');
+            div.innerHTML = `
+                <h4>Trafik Yoğunluğu</h4>
+                <div class="legend-item"><div class="legend-color" style="background: #00ff00;"></div><span>Düşük</span></div>
+                <div class="legend-item"><div class="legend-color" style="background: #ffff00;"></div><span>Orta</span></div>
+                <div class="legend-item"><div class="legend-color" style="background: #ff0000;"></div><span>Yüksek</span></div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
+
+        
+        const routeInfo = L.control({position: 'topright'});
+        routeInfo.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'route-info');
+            div.innerHTML = '<p>Güzergah seçiniz...</p>';
+            return div;
+        };
+        routeInfo.addTo(map);
+
+       
+        const guzergahlar = {
+            "İstanbul Havalimanı - Taksim": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.0793, 28.9647], // Maslak
+                    [41.0568, 28.9868], // Levent
+                    [41.0390, 28.9852], // Taksim
+                ],
+                color: '#FF0000'
+            },
+            "İstanbul Havalimanı - Silivri": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.1065, 28.8006], // Hadımköy
+                    [41.0729, 28.6468], // Büyükçekmece
+                    [41.0736, 28.2464], // Silivri
+                ],
+                color: '#00FF00'
+            },
+            "İstanbul Havalimanı - Beylikdüzü": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.1065, 28.8006], // Hadımköy
+                    [41.0043, 28.6407], // Avcılar
+                    [40.9819, 28.6399], // Beylikdüzü
+                ],
+                color: '#0000FF'
+            },
+            "İstanbul Havalimanı - Kadıköy": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.0793, 28.9647], // Maslak
+                    [41.0543, 29.0063], // Beşiktaş
+                    [41.0138, 29.0084], // Kabataş
+                    [40.9937, 29.0224], // Eminönü
+                    [40.9929, 29.0257], // Karaköy
+                    [40.9886, 29.0205], // Kadıköy
+                ],
+                color: '#FF00FF'
+            },
+            "İstanbul Havalimanı - Halkalı": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.1065, 28.8006], // Hadımköy
+                    [41.0366, 28.8006], // Küçükçekmece
+                    [41.0167, 28.8000], // Halkalı
+                ],
+                color: '#FFFF00'
+            },
+            "İstanbul Havalimanı - Avcılar": {
+                points: [
+                    [41.2622, 28.7422], // Havalimanı
+                    [41.1065, 28.8006], // Hadımköy
+                    [41.0043, 28.6407], // Avcılar
+                ],
+                color: '#00FFFF'
+            }
+        };
+
+        let currentRoute = null;
+        let routeControl = null;
+        let marker = null;
+
+        
+        document.getElementById('otobusSelect').addEventListener('change', function() {
+            const selected = this.value;
+            if (!selected) return;
+            
+            const otobus = JSON.parse(selected);
+            const guzergah = guzergahlar[otobus.guzergah];
+            
+            if (!guzergah) return;
+            
+            
+            if (currentRoute) {
+                map.removeLayer(currentRoute);
+            }
+            if (routeControl) {
+                map.removeControl(routeControl);
+            }
+            if (marker) {
+                map.removeLayer(marker);
+            }
+            
+           
+            currentRoute = L.polyline(guzergah.points, {
+                color: guzergah.color,
+                weight: 5,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(map);
+            
+            
+            map.fitBounds(currentRoute.getBounds());
+            
+            
+            routeControl = L.Routing.control({
+                waypoints: guzergah.points.map(point => L.latLng(point[0], point[1])),
+                routeWhileDragging: false,
+                show: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                fitSelectedRoutes: false,
+                lineOptions: {
+                    styles: [{color: guzergah.color, opacity: 0.7, weight: 5}]
+                }
+            }).addTo(map);
+            
+           
+            document.querySelector('.route-info').innerHTML = `
+                <h4>${otobus.guzergah}</h4>
+                <p><strong>Kalkış:</strong> ${otobus.kalkis}</p>
+                <p><strong>Plaka:</strong> ${otobus.plaka}</p>
+                <p><strong>Renk:</strong> <span style="color:${guzergah.color}">${guzergah.color}</span></p>
+            `;
+            
+           
+            simulateTraffic(guzergah.points);
+            
+            
+            marker = L.marker([otobus.lat || guzergah.points[0][0], otobus.lon || guzergah.points[0][1]]).addTo(map);
+        });
+
+        function simulateTraffic(points) {
+           
+            points.forEach((point, index) => {
+                if (index > 0 && index < points.length - 1) {
+                    const trafficLevel = Math.floor(Math.random() * 3); // 0-2 arası
+                    let color, radius;
+                    
+                    switch(trafficLevel) {
+                        case 0: // Düşük
+                            color = '#00FF00';
+                            radius = 5;
+                            break;
+                        case 1: // Orta
+                            color = '#FFFF00';
+                            radius = 10;
+                            break;
+                        case 2: // Yüksek
+                            color = '#FF0000';
+                            radius = 15;
+                            break;
+                    }
+                    
+                    L.circleMarker(point, {
+                        radius: radius,
+                        fillColor: color,
+                        color: '#000',
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    }).addTo(map).bindPopup(`Trafik Yoğunluğu: ${
+                        trafficLevel === 0 ? 'Düşük' : 
+                        trafficLevel === 1 ? 'Orta' : 'Yüksek'
+                    }`);
+                }
+            });
+        }
+
+        
+async function populateSelect() {
+    const select = document.getElementById('otobusSelect');
+    
+    try {
+        
+        const response = await fetch('http://127.0.0.1:5000/api/otobusler');
+        const otobusler = await response.json();
+        
+        
+        otobusler.forEach((otobus) => {
+            
+            if (!guzergahlar[otobus.guzergah]) {
+                guzergahlar[otobus.guzergah] = {
+                    points: [
+                        [41.2622, 28.7422], 
+                        [41.015, 28.979]   
+                    ],
+                    color: '#' + Math.floor(Math.random()*16777215).toString(16) 
+                };
+            }
+            
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify({
+                id: otobus.id,
+                plaka: otobus.plaka,
+                guzergah: otobus.guzergah,
+                kalkis: otobus.kalkis,
+                fiyat: otobus.fiyat,
+                lat: guzergahlar[otobus.guzergah].points[0][0],
+                lon: guzergahlar[otobus.guzergah].points[0][1]
+            });
+            opt.textContent = `${otobus.plaka} - ${otobus.guzergah} (${otobus.kalkis})`;
+            select.appendChild(opt);
+        });
+        
+    } catch (error) {
+        console.error('API hatası:', error);
+        
+        const fixedGuzergahlar = [
+            "İstanbul Havalimanı - Taksim",
+            "İstanbul Havalimanı - Silivri",
+            "İstanbul Havalimanı - Beylikdüzü",
+            "İstanbul Havalimanı - Kadıköy",
+            "İstanbul Havalimanı - Halkalı",
+            "İstanbul Havalimanı - Avcılar"
+        ];
+        
+        fixedGuzergahlar.forEach((guzergah, index) => {
+            const otobus = {
+                id: index + 1,
+                plaka: `34 ABC ${index + 1}`,
+                guzergah: guzergah,
+                kalkis: `${8 + index}:00`,
+                fiyat: 50 + (index * 10),
+                lat: guzergahlar[guzergah].points[0][0],
+                lon: guzergahlar[guzergah].points[0][1]
+            };
+            
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify(otobus);
+            opt.textContent = `${otobus.plaka} - ${otobus.guzergah} (${otobus.kalkis})`;
+            select.appendChild(opt);
+        });
+    }
+}
+
+        
+        document.getElementById('odemeButton').addEventListener('click', () => {
+            document.getElementById('paymentForm').style.display = 'block';
+        });
+
+        
+        document.getElementById('confirmPayment').addEventListener('click', async () => {
+            const adSoyad = document.getElementById('adSoyad').value;
+            const kisiSayisi = parseInt(document.getElementById('kisiSayisi').value);
+            const selected = document.getElementById('otobusSelect').value;
+            
+            if (!adSoyad || !selected || kisiSayisi <= 0) {
+                alert("Lütfen tüm bilgileri eksiksiz girin.");
+                return;
+            }
+
+            const otobus = JSON.parse(selected);
+            const toplamFiyat = kisiSayisi * otobus.fiyat;
+            const biletText = `Ad Soyad: ${adSoyad}\nOtobüs: ${otobus.plaka}\nGüzergah: ${otobus.guzergah}\nKalkış: ${otobus.kalkis}`;
+            const qrURL = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(biletText)}&size=150x150`;
+            const qrImgBlob = await fetch(qrURL).then(res => res.blob());
+            const qrImgData = await new Promise(resolve => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(qrImgBlob);
+            });
+
+            document.getElementById('biletContent').innerHTML = `
+                <p><strong>Yolcu:</strong> ${adSoyad}</p>
+                <p><strong>Otobüs:</strong> ${otobus.guzergah}</p>
+                <p><strong>Kalkış:</strong> ${otobus.kalkis}</p>
+                <p><strong>Yolcu Sayısı:</strong> ${kisiSayisi}</p>
+                <p><strong>Toplam Ücret:</strong> ${toplamFiyat} TL</p>
+                <img src="${qrURL}" alt="QR Kod">
+            `;
+            document.getElementById('biletBilgisi').style.display = 'block';
+
+            localStorage.setItem('biletBilgisi', JSON.stringify({
+                adSoyad,
+                otobus,
+                kisiSayisi,
+                toplamFiyat,
+                qrURL
+            }));
+
+            const user = JSON.parse(localStorage.getItem('loggedInUser'));
+            if (user) {
+                fetch("http://127.0.0.1:5000/api/bilet-kaydet", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        kullanici_id: user.id,
+                        otobus_id: otobus.id,
+                        otobus_plaka: otobus.plaka,
+                        nereden: "İstanbul",
+                        nereye: otobus.guzergah,
+                        tarih: new Date().toLocaleDateString(),
+                        saat: otobus.kalkis,
+                        koltuk_no: "1",
+                        fiyat: toplamFiyat
+                    })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (!result.success) {
+                        alert("Bilet veritabanına kaydedilemedi.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Bilet kaydı hatası:", err);
+                });
+            }
+
+            document.getElementById('paymentForm').style.display = 'none';
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Bilet Bilgileri", 10, 10);
+            doc.text(`Ad Soyad: ${adSoyad}`, 10, 20);
+            doc.text(`Otobüs: ${otobus.plaka}`, 10, 30);
+            doc.text(`Güzergah: ${otobus.guzergah}`, 10, 40);
+            doc.text(`Kalkış: ${otobus.kalkis}`, 10, 50);
+            doc.addImage(qrImgData, 'PNG', 10, 60, 50, 50);
+            doc.save(`bilet-${otobus.plaka}.pdf`);
+        });
+
+        
+        function checkLoginStatus() {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('usernameDisplay').textContent = JSON.parse(loggedInUser).username;
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+            }
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'index.html';
+        });
+
+       
+        document.addEventListener('DOMContentLoaded', function() {
+            const oncekiBilet = localStorage.getItem('biletBilgisi');
+            if (oncekiBilet) {
+                const data = JSON.parse(oncekiBilet);
+                document.getElementById('biletContent').innerHTML = `
+                    <p><strong>Yolcu:</strong> ${data.adSoyad}</p>
+                    <p><strong>Otobüs:</strong> ${data.otobus.guzergah}</p>
+                    <p><strong>Kalkış:</strong> ${data.otobus.kalkis}</p>
+                    <p><strong>Yolcu Sayısı:</strong> ${data.kisiSayisi}</p>
+                    <p><strong>Toplam Ücret:</strong> ${data.toplamFiyat} TL</p>
+                    <img src="${data.qrURL}" alt="QR Kod">
+                `;
+                document.getElementById('biletBilgisi').style.display = 'block';
+            }
+
+            checkLoginStatus();
+            populateSelect();
+        });
+    </script>
+</body>
+</html>
+<script>
+    function clearBiletVerisi() {
+        if (localStorage.getItem('biletBilgisi')) {
+            localStorage.removeItem('biletBilgisi');
+            alert("Kayıtlı bilet verisi temizlendi.");
+            document.getElementById('biletContent').innerHTML = '';
+            document.getElementById('biletBilgisi').style.display = 'none';
+        } else {
+            alert("Temizlenecek kayıtlı bilet verisi bulunamadı.");
+        }
+    }
+</script>
+
+<button onclick="clearBiletVerisi()" class="primary-btn" style="margin-top:1rem;">Bileti Temizle</button>

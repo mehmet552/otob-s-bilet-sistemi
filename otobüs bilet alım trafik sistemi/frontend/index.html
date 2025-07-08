@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Otobüs Trafik İzleme</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-links">
+                <a href="index.html">Ana Sayfa</a>
+                <a href="bilet.html">Bilet Satış</a>
+                <a href="login.html" id="loginLink">Giriş</a>
+                <a href="register.html" id="registerLink">Kayıt Ol</a>
+                <a href="bilet-gecmisi.html" class="active">Bilet Geçmişi</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span class="username" id="usernameDisplay"></span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1>Otobüs Trafik İzleme Sistemi</h1>
+            <p>Gerçek zamanlı otobüs hareketlerini takip edin, sefer bilgilerini öğrenin ve yolculuğunuzu planlayın</p>
+        </div>
+        
+        <div id="otobus-listesi"></div>
+
+        
+        <div class="social-contact-section">
+            <div class="features-container">
+                <div class="feature-card">
+                    <i class="fas fa-bolt"></i>
+                    <h3>Anlık Takip</h3>
+                    <p>Otobüslerin konumlarını gerçek zamanlı olarak izleyin</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-bell"></i>
+                    <h3>Bildirimler</h3>
+                    <p>Sefer değişikliklerinden anında haberdar olun</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-ticket-alt"></i>
+                    <h3>Online Bilet</h3>
+                    <p>Kolay ve hızlı bilet alımı ile zaman kazanın</p>
+                </div>
+            </div>
+
+            <div class="social-media">
+                <h3>Bizi Takip Edin</h3>
+                <div class="social-icons">
+                    <a href="https://instagram.com/otobustakip" target="_blank" class="social-icon">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                    <a href="https://twitter.com/otobustakip" target="_blank" class="social-icon">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="https://facebook.com/otobustakip" target="_blank" class="social-icon">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="https://wa.me/905551234567" target="_blank" class="social-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="contact-info">
+                <h3>İletişim</h3>
+                <p><i class="fas fa-envelope"></i> info@otobustakip.com</p>
+                <p><i class="fas fa-phone"></i> 0850 123 45 67</p>
+                <p><i class="fas fa-map-marker-alt"></i> İstanbul, Türkiye</p>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-content">
+            <div class="footer-logo">
+                <h2>Otobüs Takip</h2>
+                <p>Güvenli ve konforlu yolculuklar için</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">Gizlilik Politikası</a>
+                <a href="#">Kullanım Koşulları</a>
+                <a href="#">Hakkımızda</a>
+                <a href="#">SSS</a>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2023 Otobüs Takip Sistemi. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script>
+        
+    // Otobüs listesini getir ve detaylı göster
+    fetch('http://127.0.0.1:5000/api/otobusler')
+        .then(response => response.json())
+        .then(data => {
+            const liste = document.getElementById('otobus-listesi');
+            liste.innerHTML = ""; 
+
+            data.forEach((otobus) => {
+                const div = document.createElement('div');
+                div.className = 'otobus-karti';
+
+                div.innerHTML = `
+                    <h3>${otobus.peron}</h3>
+                    <p>${otobus.guzergah}</p>
+                    <div class="otobus-details">
+                        <div class="detail-item">
+                            <div class="label">Plaka</div>
+                            <div class="value">${otobus.plaka}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Kalkış</div>
+                            <div class="value">${otobus.kalkis}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Süre</div>
+                            <div class="value">${otobus.sure}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Doluluk</div>
+                            <div class="value">${otobus.koltuk}</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="label">Fiyat</div>
+                            <div class="value">${otobus.fiyat} TL</div>
+                        </div>
+                    </div>
+                `;
+
+                div.addEventListener('click', () => {
+                    window.location.href = 'bilet.html?seferNo=' + encodeURIComponent(otobus.seferNo);
+                });
+
+                liste.appendChild(div);
+            });
+        })
+        .catch(error => {
+            console.error('Hata:', error);
+            const liste = document.getElementById('otobus-listesi');
+            liste.innerHTML = `
+                <div class="error-message" style="text-align: center; padding: 2rem;">
+                    <h3>Otobüs bilgileri yüklenirken bir hata oluştu</h3>
+                    <p>Lütfen daha sonra tekrar deneyiniz.</p>
+                </div>
+            `;
+        });
+
+    
+    function checkLoginStatus() {
+        const loggedInUser = localStorage.getItem('loggedInUser');
+
+        if (loggedInUser) {
+            const user = JSON.parse(loggedInUser);
+            document.getElementById('userInfo').style.display = 'flex';
+            document.getElementById('usernameDisplay').textContent = user.username;
+            document.getElementById('loginLink').style.display = 'none';
+            document.getElementById('registerLink').style.display = 'none';
+        } else {
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('loginLink').style.display = 'inline';
+            document.getElementById('registerLink').style.display = 'inline';
+        }
+    }
+
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+        localStorage.removeItem('loggedInUser');
+        checkLoginStatus();
+        window.location.href = 'index.html';
+    });
+
+    document.addEventListener('DOMContentLoaded', checkLoginStatus);
+
+
+    </script>
+</body>
+</html>

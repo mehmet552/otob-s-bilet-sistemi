@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kayıt Ol - Otobüs Trafik İzleme</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="nav-links">
+                <a href="index.html">Ana Sayfa</a>
+                <a href="bilet.html">Bilet Satış</a>
+                <a href="login.html" id="loginLink">Giriş</a>
+                <a href="register.html" id="registerLink">Kayıt Ol</a>
+            </div>
+            <div class="user-info" id="userInfo" style="display: none;">
+                <span class="username" id="usernameDisplay"></span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1><i class="fas fa-user-plus"></i> Kayıt Ol</h1>
+                <p>Yeni bir hesap oluşturmak için bilgilerinizi girin</p>
+            </div>
+            
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerUsername"><i class="fas fa-user"></i> Kullanıcı Adı</label>
+                    <input type="text" id="registerUsername" class="form-control" placeholder="Kullanıcı adınız" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerEmail"><i class="fas fa-envelope"></i> E-posta</label>
+                    <input type="email" id="registerEmail" class="form-control" placeholder="E-posta adresiniz" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerPassword"><i class="fas fa-lock"></i> Şifre</label>
+                    <div class="password-input">
+                        <input type="password" id="registerPassword" class="form-control" placeholder="Şifreniz (en az 8 karakter)" minlength="8" required>
+                        <button type="button" id="toggleRegisterPassword" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="strength-bar"></div>
+                        <span class="strength-text">Şifre gücü: zayıf</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="registerConfirmPassword"><i class="fas fa-lock"></i> Şifre Tekrar</label>
+                    <div class="password-input">
+                        <input type="password" id="registerConfirmPassword" class="form-control" placeholder="Şifrenizi tekrar girin" required>
+                        <button type="button" id="toggleConfirmPassword" class="password-toggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div id="passwordMatch" class="validation-message"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="termsAgreement" required>
+                        <a href="#" class="terms-link">Kullanım koşullarını</a> okudum ve kabul ediyorum
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Kayıt Ol
+                </button>
+                
+                <div class="auth-footer">
+                    <p>Zaten hesabınız var mı? <a href="login.html">Giriş Yapın</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+       
+        function checkLoginStatus() {
+            const loggedInUser = localStorage.getItem('loggedInUser');
+            
+            if (loggedInUser) {
+                const user = JSON.parse(loggedInUser);
+                document.getElementById('userInfo').style.display = 'flex';
+                document.getElementById('usernameDisplay').textContent = user.username;
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                window.location.href = 'index.html';
+            } else {
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('loginLink').style.display = 'inline';
+                document.getElementById('registerLink').style.display = 'inline';
+            }
+        }
+
+       
+        function setupPasswordToggle(buttonId, inputId) {
+            const toggleButton = document.getElementById(buttonId);
+            const passwordInput = document.getElementById(inputId);
+            
+            toggleButton.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    icon.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    passwordInput.type = 'password';
+                    icon.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            });
+        }
+
+       
+        document.getElementById('registerPassword').addEventListener('input', function() {
+            const password = this.value;
+            const strengthBar = document.querySelector('.strength-bar');
+            const strengthText = document.querySelector('.strength-text');
+            
+            let strength = 0;
+            if (password.length >= 8) strength += 1;
+            if (password.match(/[A-Z]/)) strength += 1;
+            if (password.match(/[0-9]/)) strength += 1;
+            if (password.match(/[^A-Za-z0-9]/)) strength += 1;
+            
+            const strengthClasses = ['weak', 'medium', 'good', 'strong'];
+            const strengthLabels = ['zayıf', 'orta', 'iyi', 'güçlü'];
+            const strengthColors = ['#f72585', '#f8961e', '#4cc9f0', '#4895ef'];
+            
+            strengthBar.style.width = `${strength * 25}%`;
+            strengthBar.style.backgroundColor = strengthColors[strength - 1] || '#f72585';
+            strengthText.textContent = `Şifre gücü: ${strengthLabels[strength - 1] || 'zayıf'}`;
+        });
+
+      
+        document.getElementById('registerConfirmPassword').addEventListener('input', function() {
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = this.value;
+            const matchMessage = document.getElementById('passwordMatch');
+            
+            if (confirmPassword === '') {
+                matchMessage.textContent = '';
+                matchMessage.style.color = '';
+            } else if (password === confirmPassword) {
+                matchMessage.textContent = 'Şifreler eşleşiyor';
+                matchMessage.style.color = '#4cc9f0';
+            } else {
+                matchMessage.textContent = 'Şifreler eşleşmiyor';
+                matchMessage.style.color = '#f72585';
+            }
+        });
+
+        
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('registerUsername').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('registerConfirmPassword').value;
+            
+            if (password !== confirmPassword) {
+                alert('Şifreler eşleşmiyor!');
+                return;
+            }
+            
+           
+            fetch('http://127.0.0.1:5000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    email: email,
+                    password: password
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz.');
+                    window.location.href = 'login.html';
+                } else {
+                    alert(data.message || 'Kayıt sırasında bir hata oluştu.');
+                }
+            })
+            .catch(error => {
+                console.error('Hata:', error);
+                alert('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            });
+        });
+
+       
+        setupPasswordToggle('toggleRegisterPassword', 'registerPassword');
+        setupPasswordToggle('toggleConfirmPassword', 'registerConfirmPassword');
+
+        
+        document.addEventListener('DOMContentLoaded', checkLoginStatus);
+    </script>
+</body>
+</html>
